@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Pipeline — Orkesta-Senties Chauvet{% endblock %}
+
+{% block chat_context %}Pipeline de propuestas{% endblock %}
+{% block chat_module_id %}pipeline{% endblock %}
+{% block chat_greeting_scope %}el pipeline de propuestas, propuestas atoradas y tasa de conversión{% endblock %}
+{% block chat_placeholder %}el pipeline{% endblock %}
+{% block chat_suggestions %}
+<div class="chat-suggestion" onclick="quickAsk('¿Qué propuestas están atoradas más de 5 días?')">Propuestas atoradas</div>
+<div class="chat-suggestion" onclick="quickAsk('¿Cuál es mi tasa de conversión de propuestas?')">Tasa conversión</div>
+<div class="chat-suggestion" onclick="quickAsk('¿Cuánto monto tengo en trámite ahora?')">Monto en trámite</div>
+<div class="chat-suggestion" onclick="quickAsk('¿Qué propuestas fueron rechazadas y por qué?')">Rechazadas</div>
+{% endblock %}
+
+{% block content %}
+<div class="main-header">
+    <div>
+        <h1 class="main-header-title">Pipeline de propuestas</h1>
+        <div class="main-header-meta">{{ data.total }} propuestas en 90 días · Tasa conversión {{ data.tasa_conversion }}%</div>
+    </div>
+    <button class="chat-toggle" onclick="toggleChat()">💬 Abrir chat</button>
+</div>
+
+<div class="module-tabs">
+    <a href="/dashboard/salud" class="module-tab">Salud</a>
+    <a href="/dashboard/pipeline" class="module-tab active">Pipeline</a>
+    <a href="/dashboard/cartera" class="module-tab">Cartera por ejecutivo</a>
+    <a href="/dashboard/cobranza" class="module-tab">Cobranza</a>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi kpi-accent-purple">
+        <div class="kpi-label">Total 90 días</div>
+        <div class="kpi-value">{{ "{:,}".format(data.total) }}</div>
+    </div>
+    <div class="kpi kpi-accent-green">
+        <div class="kpi-label">Autorizadas</div>
+        <div class="kpi-value">{{ "{:,}".format(data.autorizadas) }}</div>
+        <div class="kpi-note">${{ "{:,.0f}".format(data.monto_autorizadas) }} MXN</div>
+    </div>
+    <div class="kpi kpi-accent-gold">
+        <div class="kpi-label">En trámite</div>
+        <div class="kpi-value">{{ "{:,}".format(data.en_tramite) }}</div>
+        <div class="kpi-note">${{ "{:,.0f}".format(data.monto_tramite) }} MXN</div>
+    </div>
+    <div class="kpi kpi-accent-purple">
+        <div class="kpi-label">Conversión</div>
+        <div class="kpi-value">{{ data.tasa_conversion }}%</div>
+        <div class="kpi-note">Autorizadas / Total</div>
+    </div>
+</div>
+
+<div class="grid-2col">
+    <div class="section">
+        <h2 class="section-title">Embudo por estatus propuesta</h2>
+        <div class="chart-container"><canvas id="chart-embudo"></canvas></div>
+    </div>
+    <div class="section">
+        <h2 class="section-title">Por estatus de fianza</h2>
+        <div class="chart-container"><canvas id="chart-estatus"></canvas></div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Propuestas atoradas (>5 días en trámite)</h2>
+    {% if data.atoradas %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Propuesta</th>
+                <th>Fiado</th>
+                <th>Beneficiario</th>
+                <th>Estatus fianza</th>
+                <th>Movimiento</th>
+                <th class="money">Monto</th>
+                <th class="num">Días</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in data.atoradas %}
+            <tr>
+                <td>{{ p.propuesta }}</td>
+                <td>{{ p.fiado[:38] }}</td>
+                <td>{{ p.beneficiario[:32] }}</td>
+                <td><span class="badge badge-gold">{{ p.desc_estatus_fianza }}</span></td>
+                <td>{{ p.desc_movto_fianza }}</td>
+                <td class="money">${{ "{:,.0f}".format(p.monto_afianzado) }}</td>
+                <td class="num">
+                    {% if p.dias_en_estatus > 15 %}<span class="badge badge-red">{{ p.dias_en_estatus }}d</span>
+                    {% elif p.dias_en_estatus > 10 %}<span class="badge badge-gold">{{ p.dias_en_estatus }}d</span>
+                    {% else %}<span class="badge badge-grey">{{ p.dias_en_estatus }}d</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--mid); text-align: center; padding: 24px;">No hay propuestas atoradas.</p>
+    {% endif %}
+</div>
+
+<script>
+const embudo = {{ data.embudo_propuesta | tojson }};
+const estatus = {{ data.por_estatus_fianza | tojson }};
+
+new Chart(document.getElementById('chart-embudo'), {
+    type: 'bar',
+    data: {
+        labels: embudo.map(x => x.desc_estatus_propuesta),
+        datasets: [{ label: 'Propuestas', data: embudo.map(x => x.cnt), backgroundColor: ['#F59E0B', '#059669', '#DC2626'], borderRadius: 4 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('chart-estatus'), {
+    type: 'doughnut',
+    data: {
+        labels: estatus.map(x => x.desc_estatus_fianza),
+        datasets: [{ data: estatus.map(x => x.cnt), backgroundColor: ['#7C3AED', '#F59E0B', '#059669', '#DC2626', '#2563EB', '#6B7280'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } } }
+});
+</script>
+{% endblock %}

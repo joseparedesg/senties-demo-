@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Chat conversacional — Orkesta Fianzas{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <h2>Chat conversacional</h2>
+        <p>Pregúntame sobre tu negocio en lenguaje natural. Respondo con datos reales y cito la fuente en cada respuesta.</p>
+    </div>
+
+    <div class="chat-messages" id="messages">
+        <div class="msg msg-assistant">
+            <strong>Hola {{ user.nombre.split()[0] }}.</strong>
+
+Soy el asistente conversacional de Orkesta Fianzas. Puedo responderte preguntas sobre el negocio consultando los datos reales.
+
+Puedes preguntarme cosas como:
+
+• "¿Cuál es mi exposición con Pemex?"
+• "¿Qué propuestas están atoradas?"
+• "Top 10 fiados por monto"
+• "Distribución por afianzadora"
+• "¿Cuántas fianzas necesito cancelar?"
+
+<em>Fuente: Consultas al día en el sistema Senties Chauvet · Datos sintéticos para demo</em>
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <form class="chat-form" id="chat-form" onsubmit="sendMessage(event)">
+            <input type="text" id="user-input" placeholder="Escribe tu pregunta..." required autocomplete="off">
+            <button type="submit">Enviar</button>
+        </form>
+        <div class="chat-suggestions">
+            <div class="chat-suggestion" onclick="quickAsk('¿Cuál es mi exposición con Pemex?')">Exposición Pemex</div>
+            <div class="chat-suggestion" onclick="quickAsk('¿Qué propuestas están atoradas?')">Propuestas atoradas</div>
+            <div class="chat-suggestion" onclick="quickAsk('Top 10 fiados por monto')">Top 10 fiados</div>
+            <div class="chat-suggestion" onclick="quickAsk('Distribución por afianzadora')">Por afianzadora</div>
+            <div class="chat-suggestion" onclick="quickAsk('¿Cuántas fianzas necesito cancelar?')">Cancelables</div>
+            <div class="chat-suggestion" onclick="quickAsk('¿Qué fianzas vencen el próximo mes?')">Por vencer</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('user-input');
+
+function addMessage(text, role) {
+    const div = document.createElement('div');
+    div.className = 'msg msg-' + role;
+    // Convert markdown-lite to HTML
+    let html = text
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/_(.+?)_/g, '<em>$1</em>');
+    div.innerHTML = html;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+}
+
+function addThinking() {
+    const div = document.createElement('div');
+    div.className = 'msg msg-assistant';
+    div.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+}
+
+async function sendMessage(evt) {
+    evt.preventDefault();
+    const message = inputEl.value.trim();
+    if (!message) return;
+    inputEl.value = '';
+    addMessage(message, 'user');
+    const thinking = addThinking();
+
+    try {
+        const fd = new FormData();
+        fd.append('message', message);
+        const res = await fetch('/api/chat', {method: 'POST', body: fd});
+        const data = await res.json();
+        thinking.remove();
+        addMessage(data.response || data.error || 'Sin respuesta', 'assistant');
+    } catch (e) {
+        thinking.remove();
+        addMessage('Error de conexión: ' + e.message, 'assistant');
+    }
+}
+
+function quickAsk(text) {
+    inputEl.value = text;
+    document.getElementById('chat-form').requestSubmit();
+}
+</script>
+{% endblock %}

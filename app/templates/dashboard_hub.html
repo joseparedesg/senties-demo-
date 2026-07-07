@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Orkesta Fianzas — Panel de control{% endblock %}
+
+{% block content %}
+<h1 class="hub-title">Bienvenido, {{ user.nombre.split()[0] }}</h1>
+<p class="hub-subtitle">Panel de control de Orkesta Fianzas · Senties Chauvet</p>
+
+<div class="hub-cards">
+    <a href="/dashboard/salud" class="hub-card">
+        <h3>Salud del agente</h3>
+        <p>Visión ejecutiva del negocio: fianzas activas, exposición por beneficiario, top fiados, distribución por afianzadora.</p>
+    </a>
+    <a href="/dashboard/pipeline" class="hub-card">
+        <h3>Pipeline de propuestas</h3>
+        <p>Embudo de propuestas por estatus, propuestas atoradas, tasa de conversión y monto en trámite.</p>
+    </a>
+    <a href="/dashboard/cartera" class="hub-card">
+        <h3>Cartera por ejecutivo</h3>
+        <p>Vista consolidada de fiados por ejecutivo: línea disponible, expedientes, buró, dictamen y alertas de vencimiento.</p>
+    </a>
+    <a href="/dashboard/cobranza" class="hub-card">
+        <h3>Cobranza</h3>
+        <p>Antigüedad de saldos vencidos, top deudores, primas por cobrar y estado de facturación.</p>
+    </a>
+    <a href="/chat" class="hub-card hub-card-chat">
+        <h3>Chat conversacional</h3>
+        <p>Pregúntale a Orkesta en lenguaje natural. Responde con datos reales del negocio y cita la fuente en cada respuesta.</p>
+    </a>
+</div>
+{% endblock %}

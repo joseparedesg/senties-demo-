@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orkesta-Senties Chauvet — Ingresar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/static/img/orkesta_logo.png">
+    <link rel="stylesheet" href="/static/css/orkesta.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-brand">
+                <img src="/static/img/orkesta_logo.png" alt="Orkesta">
+                <h1>Orkesta-Senties Chauvet</h1>
+                <div class="tag">Automatización de fianzas con IA</div>
+            </div>
+
+            {% if error %}
+            <div class="login-error">{{ error }}</div>
+            {% endif %}
+
+            <form class="login-form" method="post" action="/login">
+                <div>
+                    <label>Usuario</label>
+                    <input type="text" name="username" required autofocus>
+                </div>
+                <div>
+                    <label>Contraseña</label>
+                    <input type="password" name="password" required>
+                </div>
+                <button type="submit">Ingresar</button>
+            </form>
+
+            <div class="login-demo-users">
+                <strong>Usuarios demo:</strong>
+                <code>diego</code> (admin) · <code>marlene</code> (operativo) · <code>alfonso</code> (ejecutivo)<br>
+                Contraseña: <code>senties2026</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

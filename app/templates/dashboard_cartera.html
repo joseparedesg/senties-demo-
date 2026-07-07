@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Cartera — Orkesta-Senties Chauvet{% endblock %}
+
+{% block chat_context %}Cartera por ejecutivo{% endblock %}
+{% block chat_module_id %}cartera{% endblock %}
+{% block chat_greeting_scope %}la cartera, líneas de crédito, expedientes y buró de tus fiados{% endblock %}
+{% block chat_placeholder %}la cartera{% endblock %}
+{% block chat_suggestions %}
+<div class="chat-suggestion" onclick="quickAsk('¿Qué expedientes están por vencer en 30 días?')">Expedientes por vencer</div>
+<div class="chat-suggestion" onclick="quickAsk('¿Qué fiados tienen buró vencido?')">Buró vencido</div>
+<div class="chat-suggestion" onclick="quickAsk('Consulta el fiado Motores e Ingeniería Mexmot')">Consultar fiado</div>
+<div class="chat-suggestion" onclick="quickAsk('¿Qué ejecutivo tiene la línea disponible más comprometida?')">Ejecutivo más comprometido</div>
+{% endblock %}
+
+{% block content %}
+<div class="main-header">
+    <div>
+        <h1 class="main-header-title">Cartera por ejecutivo</h1>
+        <div class="main-header-meta">Vista consolidada cross-fiado · La vista que Marlene pidió</div>
+    </div>
+    <button class="chat-toggle" onclick="toggleChat()">💬 Abrir chat</button>
+</div>
+
+<div class="module-tabs">
+    <a href="/dashboard/salud" class="module-tab">Salud</a>
+    <a href="/dashboard/pipeline" class="module-tab">Pipeline</a>
+    <a href="/dashboard/cartera" class="module-tab active">Cartera por ejecutivo</a>
+    <a href="/dashboard/cobranza" class="module-tab">Cobranza</a>
+</div>
+
+{% if not data.ejecutivo_filter %}
+<div class="section">
+    <h2 class="section-title">Resumen por ejecutivo</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Ejecutivo</th>
+                <th class="num">Fiados</th>
+                <th class="money">Línea total</th>
+                <th class="money">Línea disponible</th>
+                <th class="num">Exp. vencidos</th>
+                <th class="num">Buró vencido</th>
+                <th class="num">Dict. vencidos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in data.por_ejecutivo %}
+            <tr>
+                <td><strong>{{ e.ejecutivo }}</strong></td>
+                <td class="num">{{ e.num_fiados }}</td>
+                <td class="money">${{ "{:,.0f}".format(e.linea_total) }}</td>
+                <td class="money">${{ "{:,.0f}".format(e.linea_disponible) }}</td>
+                <td class="num">{% if e.expedientes_vencidos > 0 %}<span class="badge badge-red">{{ e.expedientes_vencidos }}</span>{% else %}<span class="badge badge-green">0</span>{% endif %}</td>
+                <td class="num">{% if e.buros_vencidos > 0 %}<span class="badge badge-red">{{ e.buros_vencidos }}</span>{% else %}<span class="badge badge-green">0</span>{% endif %}</td>
+                <td class="num">{% if e.dictamenes_vencidos > 0 %}<span class="badge badge-red">{{ e.dictamenes_vencidos }}</span>{% else %}<span class="badge badge-green">0</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="section">
+    <h2 class="section-title">{% if data.ejecutivo_filter %}Fiados de tu cartera{% else %}Detalle de fiados{% endif %}</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Fiado</th>
+                <th>RFC</th>
+                {% if not data.ejecutivo_filter %}<th>Ejecutivo</th>{% endif %}
+                <th class="money">Línea total</th>
+                <th class="money">Disponible</th>
+                <th class="num">% Disp.</th>
+                <th>Buró</th>
+                <th>Expediente</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in data.fiados[:25] %}
+            <tr>
+                <td>{{ f.nombre[:42] }}</td>
+                <td><code style="font-size:11px;">{{ f.rfc }}</code></td>
+                {% if not data.ejecutivo_filter %}<td>{{ f.ejecutivo }}</td>{% endif %}
+                <td class="money">${{ "{:,.0f}".format(f.linea_afianzamiento) }}</td>
+                <td class="money">${{ "{:,.0f}".format(f.linea_disponible) }}</td>
+                <td class="num">
+                    {% if f.pct_disponible > 60 %}<span class="badge badge-green">{{ f.pct_disponible }}%</span>
+                    {% elif f.pct_disponible > 30 %}<span class="badge badge-gold">{{ f.pct_disponible }}%</span>
+                    {% else %}<span class="badge badge-red">{{ f.pct_disponible }}%</span>{% endif %}
+                </td>
+                <td>
+                    {% if f.categoria_buro == 'A' %}<span class="badge badge-green">A</span>
+                    {% elif f.categoria_buro == 'B' %}<span class="badge badge-blue">B</span>
+                    {% elif f.categoria_buro == 'C' %}<span class="badge badge-gold">C</span>
+                    {% else %}<span class="badge badge-red">D</span>{% endif %}
+                </td>
+                <td>{{ f.expediente_vigente_hasta }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if data.alertas %}
+<div class="section">
+    <h2 class="section-title">Alertas de vencimiento (próximos 30 días)</h2>
+    <table class="data-table">
+        <thead>
+            <tr><th>Fiado</th><th>Documento</th><th>Vence</th></tr>
+        </thead>
+        <tbody>
+            {% for a in data.alertas %}
+            <tr>
+                <td>{{ a.nombre }}</td>
+                <td><span class="badge badge-gold">{{ a.tipo }}</span></td>
+                <td>{{ a.fecha_venc }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Orkesta-Senties Chauvet{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/static/img/orkesta_logo.png">
+    <link rel="stylesheet" href="/static/css/orkesta.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    {% if user %}
+    <div class="app-layout" id="app-layout">
+
+        <!-- ============ SIDEBAR ============ -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="/static/img/orkesta_logo.png" alt="Orkesta">
+                <div class="sidebar-brand-name">Orkesta-Senties<br>Chauvet</div>
+            </div>
+
+            <div class="sidebar-user">
+                <div class="sidebar-user-name">{{ user.nombre }}</div>
+                <div class="sidebar-user-role">{{ user.role }} · Laitec</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/dashboard/salud" class="sidebar-nav-link {% if request.url.path == '/dashboard/salud' or request.url.path == '/dashboard' %}active{% endif %}">
+                    Salud del agente
+                </a>
+                <a href="/dashboard/pipeline" class="sidebar-nav-link {% if request.url.path == '/dashboard/pipeline' %}active{% endif %}">
+                    Pipeline de propuestas
+                </a>
+                <a href="/dashboard/cartera" class="sidebar-nav-link {% if request.url.path == '/dashboard/cartera' %}active{% endif %}">
+                    Cartera por ejecutivo
+                </a>
+                <a href="/dashboard/cobranza" class="sidebar-nav-link {% if request.url.path == '/dashboard/cobranza' %}active{% endif %}">
+                    Cobranza
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="/logout">← Salir</a>
+            </div>
+        </aside>
+
+        <!-- ============ MAIN CONTENT ============ -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- ============ CHAT PANEL (right) ============ -->
+        <aside class="chat-panel" id="chat-panel">
+            <div class="chat-panel-header">
+                <div class="chat-panel-title">
+                    <span class="chat-panel-title-text">Chat con tus datos</span>
+                </div>
+                <button class="chat-panel-close" onclick="toggleChat()" title="Cerrar">×</button>
+            </div>
+
+            <div class="chat-context">
+                Contexto activo: {% block chat_context %}{{ chat_module_label|default('Todo el negocio') }}{% endblock %}
+            </div>
+
+            <div class="chat-messages" id="messages">
+                <div class="msg msg-assistant">
+                    <strong>Hola {{ user.nombre.split()[0] }}.</strong>
+
+Soy tu asistente. Puedo responderte sobre {% block chat_greeting_scope %}el negocio{% endblock %} consultando los datos reales.
+
+Prueba una de las preguntas de abajo o escribe la tuya.
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <form class="chat-form" id="chat-form" onsubmit="sendMessage(event)">
+                    <input type="text" id="user-input" placeholder="Pregunta sobre {% block chat_placeholder %}el negocio{% endblock %}..." required autocomplete="off">
+                    <button type="submit">→</button>
+                </form>
+                <div class="chat-suggestions" id="chat-suggestions">
+                    {% block chat_suggestions %}
+                    <div class="chat-suggestion" onclick="quickAsk('¿Cuál es la salud general del negocio?')">Salud general</div>
+                    <div class="chat-suggestion" onclick="quickAsk('¿Cuál es mi exposición con Pemex?')">Exposición Pemex</div>
+                    <div class="chat-suggestion" onclick="quickAsk('Top 10 fiados por monto')">Top fiados</div>
+                    {% endblock %}
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <div class="demo-badge">DEMO · Datos sintéticos</div>
+
+    <script>
+    // Chat panel toggle
+    function toggleChat() {
+        document.getElementById('app-layout').classList.toggle('chat-collapsed');
+        localStorage.setItem('chatCollapsed', document.getElementById('app-layout').classList.contains('chat-collapsed'));
+    }
+
+    // Restore chat state
+    if (localStorage.getItem('chatCollapsed') === 'true') {
+        document.getElementById('app-layout').classList.add('chat-collapsed');
+    }
+
+    // Chat functionality
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('user-input');
+    const currentModule = "{% block chat_module_id %}{{ chat_module_id|default('global') }}{% endblock %}";
+
+    function addMessage(text, role) {
+        const div = document.createElement('div');
+        div.className = 'msg msg-' + role;
+        let html = text
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/_(.+?)_/g, '<em>$1</em>');
+        div.innerHTML = html;
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return div;
+    }
+
+    function addThinking() {
+        const div = document.createElement('div');
+        div.className = 'msg msg-assistant';
+        div.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+        messagesEl.appendChild(div);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return div;
+    }
+
+    async function sendMessage(evt) {
+        evt.preventDefault();
+        const message = inputEl.value.trim();
+        if (!message) return;
+        inputEl.value = '';
+        addMessage(message, 'user');
+        const thinking = addThinking();
+
+        try {
+            const fd = new FormData();
+            fd.append('message', message);
+            fd.append('module_context', currentModule);
+            const res = await fetch('/api/chat', {method: 'POST', body: fd});
+            const data = await res.json();
+            thinking.remove();
+            addMessage(data.response || data.error || 'Sin respuesta', 'assistant');
+        } catch (e) {
+            thinking.remove();
+            addMessage('Error de conexión: ' + e.message, 'assistant');
+        }
+    }
+
+    function quickAsk(text) {
+        inputEl.value = text;
+        document.getElementById('chat-form').requestSubmit();
+    }
+    </script>
+
+    {% else %}
+    {% block login_content %}{% endblock %}
+    {% endif %}
+</body>
+</html>

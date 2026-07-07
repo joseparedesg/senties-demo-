@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Salud del agente — Orkesta-Senties Chauvet{% endblock %}
+
+{% block chat_context %}Salud del agente{% endblock %}
+{% block chat_module_id %}salud{% endblock %}
+{% block chat_greeting_scope %}la salud general del negocio, exposición por cliente, distribución por afianzadora{% endblock %}
+{% block chat_placeholder %}la salud del negocio{% endblock %}
+{% block chat_suggestions %}
+<div class="chat-suggestion" onclick="quickAsk('¿Cuál es la salud general del negocio hoy?')">Salud general</div>
+<div class="chat-suggestion" onclick="quickAsk('¿Cuál es mi exposición con Pemex?')">Exposición Pemex</div>
+<div class="chat-suggestion" onclick="quickAsk('Analiza mi exposición al sector público federal y dime qué riesgo ves')">Análisis de riesgo</div>
+<div class="chat-suggestion" onclick="quickAsk('Top 10 fiados por monto')">Top fiados</div>
+<div class="chat-suggestion" onclick="quickAsk('Distribución por afianzadora')">Por afianzadora</div>
+{% endblock %}
+
+{% block content %}
+<div class="main-header">
+    <div>
+        <h1 class="main-header-title">Salud del agente</h1>
+        <div class="main-header-meta">{{ data.fianzas_activas }} fianzas activas · ${{ "{:,.0f}".format(data.monto_afianzado) }} MXN afianzado · Corte al día de hoy</div>
+    </div>
+    <button class="chat-toggle" onclick="toggleChat()">💬 Abrir chat</button>
+</div>
+
+<div class="module-tabs">
+    <a href="/dashboard/salud" class="module-tab active">Salud</a>
+    <a href="/dashboard/pipeline" class="module-tab">Pipeline</a>
+    <a href="/dashboard/cartera" class="module-tab">Cartera por ejecutivo</a>
+    <a href="/dashboard/cobranza" class="module-tab">Cobranza</a>
+</div>
+
+<div class="kpi-grid">
+    <div class="kpi kpi-accent-purple">
+        <div class="kpi-label">Fianzas activas</div>
+        <div class="kpi-value">{{ "{:,}".format(data.fianzas_activas) }}</div>
+        <div class="kpi-note">Producción + Autorizadas + Lote</div>
+    </div>
+    <div class="kpi kpi-accent-purple">
+        <div class="kpi-label">Monto afianzado</div>
+        <div class="kpi-value money">${{ "{:,.0f}".format(data.monto_afianzado) }}</div>
+        <div class="kpi-note">MXN · Exposición total</div>
+    </div>
+    <div class="kpi kpi-accent-gold">
+        <div class="kpi-label">Propuestas trámite</div>
+        <div class="kpi-value">{{ "{:,}".format(data.propuestas_proceso) }}</div>
+        <div class="kpi-note">Pipeline activo</div>
+    </div>
+    <div class="kpi kpi-accent-red">
+        <div class="kpi-label">A cancelar</div>
+        <div class="kpi-value">{{ "{:,}".format(data.a_cancelar) }}</div>
+        <div class="kpi-note">Fecha cumplimiento vencida</div>
+    </div>
+    <div class="kpi kpi-accent-green">
+        <div class="kpi-label">A renovar</div>
+        <div class="kpi-value">{{ "{:,}".format(data.a_renovar) }}</div>
+        <div class="kpi-note">Próximos 60 días</div>
+    </div>
+    <div class="kpi kpi-accent-green">
+        <div class="kpi-label">Línea liberable</div>
+        <div class="kpi-value money small">${{ "{:,.0f}".format(data.monto_liberable) }}</div>
+        <div class="kpi-note">MXN · Al cancelar</div>
+    </div>
+</div>
+
+<div class="grid-2col">
+    <div class="section">
+        <h2 class="section-title">Distribución por afianzadora</h2>
+        <div class="chart-container"><canvas id="chart-afianzadora"></canvas></div>
+    </div>
+    <div class="section">
+        <h2 class="section-title">Top 10 beneficiarios por exposición</h2>
+        <div class="chart-container"><canvas id="chart-beneficiarios"></canvas></div>
+    </div>
+</div>
+
+<div class="section">
+    <h2 class="section-title">Top 10 fiados por monto afianzado</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Fiado</th>
+                <th class="num">Fianzas</th>
+                <th class="money">Monto (MXN)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in data.top_fiados %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ f.nombre }}</td>
+                <td class="num">{{ f.fianzas }}</td>
+                <td class="money">${{ "{:,.2f}".format(f.monto) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+const dataAfianzadora = {{ data.por_afianzadora | tojson }};
+const dataBeneficiarios = {{ data.top_beneficiarios | tojson }};
+
+new Chart(document.getElementById('chart-afianzadora'), {
+    type: 'doughnut',
+    data: {
+        labels: dataAfianzadora.map(x => x.nombre),
+        datasets: [{
+            data: dataAfianzadora.map(x => x.monto),
+            backgroundColor: ['#7C3AED', '#F59E0B', '#2563EB', '#059669', '#DC2626', '#6B7280']
+        }]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: (c) => `${c.label}: $${c.parsed.toLocaleString('es-MX', {maximumFractionDigits: 0})} MXN` } }
+        }
+    }
+});
+
+new Chart(document.getElementById('chart-beneficiarios'), {
+    type: 'bar',
+    data: {
+        labels: dataBeneficiarios.map(x => x.nombre.length > 22 ? x.nombre.substring(0, 22) + '...' : x.nombre),
+        datasets: [{
+            label: 'Monto MXN',
+            data: dataBeneficiarios.map(x => x.monto),
+            backgroundColor: '#7C3AED',
+            borderRadius: 4
+        }]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (c) => `$${c.parsed.x.toLocaleString('es-MX', {maximumFractionDigits: 0})} MXN` } }
+        },
+        scales: { x: { ticks: { font: { size: 10 }, callback: (v) => '$' + (v / 1_000_000).toFixed(0) + 'M' } }, y: { ticks: { font: { size: 10 } } } }
+    }
+});
+</script>
+{% endblock %}
