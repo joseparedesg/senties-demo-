@@ -4,7 +4,7 @@ from datetime import date
 
 
 def dashboard_salud(db):
-    """Dashboard 1: Salud del agente."""
+    """Dashboard 1: Salud de la Cartera."""
     cur = db.cursor()
 
     # KPIs globales

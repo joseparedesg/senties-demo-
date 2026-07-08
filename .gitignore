@@ -11,3 +11,8 @@ data/senties_demo.db
 
 # Backups timestamped
 *.bak.*
+
+# Datos productivos - NO commitear
+data/chubb_fianzas_vigor.json
+reportes/
+*.xlsx

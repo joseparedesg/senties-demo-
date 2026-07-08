@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Salud del agente — Orkesta-Senties Chauvet{% endblock %}
+{% block title %}Salud de la Cartera — Orkesta-Senties Chauvet{% endblock %}
 
-{% block chat_context %}Salud del agente{% endblock %}
+{% block chat_context %}Salud de la Cartera{% endblock %}
 {% block chat_module_id %}salud{% endblock %}
 {% block chat_greeting_scope %}la salud general del negocio, exposición por cliente, distribución por afianzadora{% endblock %}
 {% block chat_placeholder %}la salud del negocio{% endblock %}
@@ -17,7 +17,7 @@
 {% block content %}
 <div class="main-header">
     <div>
-        <h1 class="main-header-title">Salud del agente</h1>
+        <h1 class="main-header-title">Salud de la Cartera</h1>
         <div class="main-header-meta">{{ data.fianzas_activas }} fianzas activas · ${{ "{:,.0f}".format(data.monto_afianzado) }} MXN afianzado · Corte al día de hoy</div>
     </div>
     <button class="chat-toggle" onclick="toggleChat()">💬 Abrir chat</button>
